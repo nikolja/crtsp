@@ -1,3 +1,9 @@
+# subdirectory
+build
+.vs
+.vscode
+.idea
+
 # Prerequisites
 *.d
 

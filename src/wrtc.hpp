@@ -1144,30 +1144,9 @@ struct webrtc_session : public std::enable_shared_from_this<webrtc_session> {
         res.set_content(generate_uuid(), "text/plain");
     }
 
-    static void on_cmd_roi(nlohmann::json& json, httplib::Response& res) {
-        // handle the select_roi command
-        // check if the required fields are present
-        // http://<hostname>:<port>/api?command=select_roi&top_left=[0.1,0.2]&bottom_right=[0.9,0.8]
-        if (!json.contains("top_left") || !json.contains("bottom_right")) {
-            res.status = 400;
-            res.set_content("missing ROI coordinates", "text/plain");
-            LOG_ERROR_FMT( "missing ROI coordinates" );
-            return;
-        }
-        std::array<float, 2> top_left = json["top_left"];
-        std::array<float, 2> bottom_right = json["bottom_right"];
-        LOG_INFO_FMT("select_roi: top_left=({}, {}), bottom_right=({}, {})", top_left[0], top_left[1], bottom_right[0], bottom_right[1]);
-        res.set_content("ROI command handled", "text/plain");
-    }
-
-    static void on_cmd_clear(nlohmann::json& json, httplib::Response& res) {
-        // handle the clear_roi command
-        // http://<hostname>:<port>/api?command=clear_roi
-        LOG_INFO_FMT( "clearing ROI" );
-        res.set_content("ROI cleared", "text/plain");
-    }
-
     static void on_cmd_close(nlohmann::json& json, httplib::Response& res) {
+        // handle the disconnect command
+        // http://<hostname>:<port>/api?command=disconnect&peer_id=...
         std::string const peer_id = json.value("peer_id", ""); //std::string const peer_id = json["peer_id"]
         if (peer_id.empty()) { //if (!json.contains("peer_id")) {
             res.status = 400;
@@ -1275,17 +1254,12 @@ struct webrtc_session : public std::enable_shared_from_this<webrtc_session> {
     #include "wrtc.inl"
 
     inline static const constexpr char* cmd_make_uuid{ "make_uuid" };
-    inline static const constexpr char* cmd_clear_roi{ "clear_roi" };
-    inline static const constexpr char* cmd_zoom_video{ "zoom_video" };
-    inline static const constexpr char* cmd_select_roi{ "select_roi" };
     inline static const constexpr char* cmd_disconnect{ "disconnect" };
 
     // commands api map for http server
     using cmd_t = std::function<void(nlohmann::json&, httplib::Response&)>;
     static inline std::unordered_map<std::string, cmd_t> cmds{
         { cmd_make_uuid, on_cmd_uuid },
-        { cmd_select_roi, on_cmd_roi },
-        { cmd_clear_roi, on_cmd_clear },
         { cmd_disconnect, on_cmd_close }
     };
 
@@ -1296,7 +1270,7 @@ struct webrtc_session : public std::enable_shared_from_this<webrtc_session> {
     static void default_commands() {
         // register default commands
         cmds.clear();
-        cmds[cmd_select_roi] = on_cmd_roi;
+        cmds[cmd_make_uuid] = on_cmd_uuid;
         cmds[cmd_disconnect] = on_cmd_close;
     }
 

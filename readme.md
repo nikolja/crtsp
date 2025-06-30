@@ -58,7 +58,7 @@ chmod +x setup/rpi/build.sh
 ./setup/rpi/build.sh
 ```
 
-Autorun via labwc (after build):
+Autorun on Raspberry Pi:
 
 ```bash
 cd setup/rpi
@@ -144,26 +144,108 @@ Example `conf.json`:
 
 Command-line args override JSON.
 
+## Parameters
+
+All configuration parameters can be used consistently across:
+
+* CLI arguments: `--key=value`
+* JSON config file (`--config=conf.json`)
+* HTTP API (`POST /api` or `GET /api?command=config&key=value`)
+
+Below is the full list of supported keys and their meanings, extracted from `app/rtsp.hpp`:
+
+### Common parameters:
+
+| Key          | Type   | Description                                                              |
+| ------------ | ------ | ------------------------------------------------------------------------ |
+| `source`     | string | video source (e.g., `v4l2src`, `mfvideosrc`, `libcamerasrc`, ...)        |
+| `property`   | string | video source properties (e.g., `device=/dev/video0`, `sensor-id=0`, ...) |
+| `mediatype`  | string | media type (e.g., `video/x-raw`, `image/jpeg`)                           |
+| `framesize`  | string | resolution (e.g., `480p`, `640x480`, `WxH`, `W;H`)                       |
+| `framerate`  | int    | video framerate (e.g., 30)                                               |
+| `format`     | string | pixel format (e.g., `UYVY`, `NV12`, `I420`, `GRAY8`, ...)                |
+| `decode`     | string | decoder if needed (e.g., `jpegdec`, `avdec_mjpeg`, ...)                  |
+| `encoder`    | string | output codec (`h264`, `vp8`, `mjpeg`, ...)                               |
+| `backend`    | string | encoder backend (`gst-basic`, `gst-qsv`, `gst-nv`, ...)                  |
+| `bitrate`    | int    | encoder bitrate in kbit/s                                                |
+| `tuning`     | string | encoder tuning (`stillimage`, `zerolatency`, ...)                        |
+| `preset`     | string | encoder preset (`ultrafast`, `veryfast`, ...)                            |
+| `keyframes`  | int    | distance between keyframes (0 = auto)                                    |
+| `payload`    | int    | payload type of output packets                                           |
+| `interval`   | int    | SPS/PPS insertion interval (0 = disable, -1 = with every IDR)            |
+| `rtspsink`   | string | RTSP stream address (e.g., `0.0.0.0:8554/stream0`)                       |
+| `rtspmcast`  | bool   | enable RTSP multicast                                                    |
+| `rtspmport`  | int    | multicast port                                                           |
+| `verbose`    | bool   | verbose level                                                            |
+| `webrtctout` | int    | WebRTC source timeout (ms)                                               |
+| `webrtcport` | int    | HTTP/WebRTC port (e.g., 8000)                                            |
+| `webrtcstun` | string | STUN server URL (e.g., `stun://stun.l.google.com:19302`)                 |
+| `webrtccont` | string | HTML/JS content file (e.g., `client.html`)                               |
+
+> **Note:** not all keys may be supported by every backend. See `./rtsp --help`, `http://<ip>:<port>/help` or source code for details.
+
 ---
 
 ## HTTP API
 
+### `/` WebRTC Client Page
+
+By default, opening `http://<host>:<port>/` loads the WebRTC HTML client.
+
+* Designed for previewing real-time stream in browser
+* Uses `webrtc.js` to handle signaling and media
+* Customizable via `webrtccont` parameter (e.g., `client.html`)
+* Supports overlays, FPS display, disconnection handling, and more
+
+The server includes a built-in HTTP interface powered by `httplib`. It provides:
+
+* Diagnostic pages (`/`, `/help`, `/log`, `/config`)
+* JSON-based configuration API (`/api`) ((e.g., `/api?command=args`, `/api?command=config&framesize=720p`)
+* Live HTML-based form UI for config editing (`/config`)
+
 ### `GET /help`
 
-* Returns static HTML table of available options (with types, current/default values, and descriptions).
+Returns an HTML page with a table of all available configuration options (with types, current/default values, and descriptions).
+
+* Fields: key, type, current value, default value, description
+* Internally populated via `on_help()` with reflection from `opts::parser`
+
+### `GET /log`
+
+Returns the most recent portion of the server log (`log.txt` or configured log file).
+
+* Response: `text/plain`
+* Internally limited to \~128KB, last 8K lines
 
 ### `GET /config`
 
-* Returns editable HTML form.
-* Highlights:
+Returns editable HTML form.
 
-  * 🔵 Modified fields (value != default)
-  * 🟡 Live edited fields (via JS)
-* Submits changes to `/api` via `POST`.
+* 🔵 Highlights modified fields (value != default)
+* 🟡 Live edited fields (via JS)
+* Submits changes to `/api` via `POST`
+
+### `GET /api`
+
+This endpoint allows invoking API commands via URL query parameters.
+Useful for quick testing or browser access.
+
+#### Example:
+
+```
+GET /api?command=config&bitrate=1000&framesize=640x480
+```
+
+* Equivalent to a `POST` with the same fields
+* Supports `command=config`, `command=save`, `command=args`
 
 ### `POST /api`
 
-**Payload:**
+This endpoint accepts commands in JSON payload format. Supported commands:
+
+#### `command: "config"`
+
+Updates runtime configuration parameters.
 
 ```json
 {
@@ -173,17 +255,80 @@ Command-line args override JSON.
 }
 ```
 
-* Updates config in-place. Only changed keys are sent.
+* Only changed fields are required
+* Responds with `config command handled`
+
+#### `command: "save"`
+
+Saves current configuration to file.
+
+```json
+{
+  "command": "save",
+  "path": "custom.json" // optional, otherwise uses current or default
+}
+```
+
+* Response: status message with file path
+
+#### `command: "args"`
+
+Dumps all current CLI/JSON args as JSON.
+
+```json
+{
+  "command": "args"
+}
+```
+
+* Response: formatted JSON array of all active options
+
+**Payload:**
+
+```json
+{ "command": "config", "bitrate": 1500, "framesize": "720p" }
+```
+
+Updates config in‑place; only sends changed keys.
+
+---
+
+## Setup Scripts
+
+The `setup/` directory contains platform-specific scripts for building, installing, and configuring CRTSP.
+
+### Structure:
+
+#### `setup/rpi/`
+
+Scripts tailored for Raspberry Pi deployment:
+
+* `prepare.sh`: Installs system dependencies (GStreamer, build tools, etc.)
+* `build.sh`: Builds the project using CMake with Raspberry Pi-optimized flags
+* `install.sh`: Installs binaries and sets up autorun on boot
+
+#### `setup/win/`
+
+Windows-specific helper scripts:
+
+* `gstreamer.ps1`: Downloads and sets up the GStreamer SDK, sets environment variables, adds paths
+
+These scripts simplify the process of configuring the environment for both development and headless deployment.
 
 ---
 
 ## Source Files
 
-* `app/rtsp.cpp`: Main entry point and HTTP server setup
-* `src/opts.hpp`: CLI and JSON config parser (based on `cxxopts`)
-* `src/meta.hpp`: Meta reflection & serialization helpers
-* `src/wrtc.hpp`: WebRTC signaling support
-* `src/gst.hpp`: GStreamer pipeline utilities
+* `app/rtsp.cpp` : Main entry point and HTTP server setup
+* `app/rtsp.hpp` : Implementation of application
+* `src/opts.hpp` : CLI and JSON config parser (based on `cxxopts`)
+* `src/meta.hpp` : Meta reflection & serialization helpers
+* `src/wrtc.hpp` : WebRTC signaling, HTTP server support
+* `src/wrtc.inl` : HTML/JS WebRTC page
+* `src/gst.hpp`  : GStreamer pipeline utilities
+* `src/log.hpp`  : Logging wrapper via spdlog
+* `src/json.hpp` : Json helpers via nlohmann
+* `src/utils.hpp`: Misc. helpers
 
 ---
 

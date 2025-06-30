@@ -76,9 +76,10 @@ int main(int argc, char* argv[]) {
         return options.to_json(just_changed);
     };
     // making pipeline and server
-    if (rtsp.open()) {
-        // wait for server to finish
-        rtsp.wait();
-    }
+    if (!rtsp.open())
+        LOG_ERROR_FMT( "rtsp.open() failed" );
+    // wait for server to finish
+    rtsp.wait();
+
     return 0;
 }

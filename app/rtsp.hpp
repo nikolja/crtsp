@@ -353,7 +353,7 @@ struct rtsp_t {
             });
             // config page
             wrtc::webrtc_session::server.Get("/config", [this](const httplib::Request &req, httplib::Response &res) -> void {
-                LOG_INFO_FMT( "received /help request" );
+                LOG_INFO_FMT( "received /config request" );
                 std::string content_config;
                 if (on_help) {
                     nlohmann::json content_json = on_help(config);

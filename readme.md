@@ -70,16 +70,15 @@ cmake --build . --parallel 18
 
 1. Install [GStreamer 1.0] (https://gstreamer.freedesktop.org/documentation/installing/on-windows.html?gi-language=c)
 2. Configure your development environment (edit the system environment variables -> control panel -> system -> advanced -> environment variables)
-## Path: 
-  * C:\gstreamer\1.0\msvc_x86_64\bin
-  * C:\gstreamer\1.0\msvc_x86_64\lib\gstreamer-1.0
-  * C:\gstreamer\1.0\msvc_x86_64\lib
-## System variables
-  * GSTREAMER_1_0_ROOT_MSVC_X86_64: C:\gstreamer\1.0\msvc_x86_64
-  * GSTREAMER_1_0_ROOT_X86_64: C:\gstreamer\1.0\msvc_x86_64
-  * GSTREAMER_DIR: C:\gstreamer\1.0\msvc_x86_64
-## Path:
-  * C:\gstreamer\1.0\msvc_x86_64\bin
+#### ➤ Path: 
+  - `C:\gstreamer\1.0\msvc_x86_64\bin`
+  - `C:\gstreamer\1.0\msvc_x86_64\lib\gstreamer-1.0`
+  - `C:\gstreamer\1.0\msvc_x86_64\lib`
+#### ➤ System variables
+  - `GSTREAMER_1_0_ROOT_MSVC_X86_64 = C:\gstreamer\1.0\msvc_x86_64`
+  - `GSTREAMER_1_0_ROOT_X86_64 = C:\gstreamer\1.0\msvc_x86_64`
+  - `GSTREAMER_DIR = C:\gstreamer\1.0\msvc_x86_64`
+
 3. Configure CMake:
 
 ```powershell

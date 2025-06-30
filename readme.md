@@ -11,7 +11,7 @@
 * 📦 JSON and CLI config loading/saving
 * 🔄 WebRTC session support (via `webrtc_session`)
 * 🧩 Modular C++ headers with meta reflection system
-* 🧠 Built-in `http://<ip>:<port>` (WebRTC), `http://<ip>:<port>/config` UIs config (HTML forms), http://<ip>:<port>/api (HTTP API)
+* 🧠 Built-in `http://<ip>:<port>` (WebRTC), `http://<ip>:<port>/config` UIs config (HTML forms), `http://<ip>:<port>/api` (HTTP API)
 
 ---
 

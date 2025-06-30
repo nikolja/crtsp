@@ -26,7 +26,7 @@ cd crtsp
 
 ### ✅ Dependencies (all platforms)
 
-* C++17 compatible compiler (GCC / Clang / MSVC)
+* C++20 compatible compiler (GCC / Clang / MSVC)
 * GStreamer 1.0
 * CMake 3.16+
 
@@ -36,7 +36,7 @@ Install required libraries:
 
 ```bash
 sudo apt update && sudo apt upgrade
-sudo apt install -y git build-essential cmake ninja-build g++
+sudo apt install -y git build-essential g++ cmake ninja-build
 sudo apt install -y v4l-utils libv4l-dev libx264-dev libjpeg-dev libglib2.0-dev libcamera-dev
 sudo apt install -y gstreamer1.0-plugins-ugly gstreamer1.0-nice gstreamer1.0-libcamera libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev libgstrtspserver-1.0-dev
 ```
@@ -47,6 +47,23 @@ Build:
 mkdir build && cd build
 cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . -j$(nproc)
+```
+
+Install and build:
+
+```bash
+chmod +x setup/rpi/prepare.sh
+./setup/rpi/prepare.sh
+chmod +x setup/rpi/build.sh
+./setup/rpi/build.sh
+```
+
+Autorun via labwc (after build):
+
+```bash
+cd setup/rpi
+chmod +x install.sh
+sudo reboot
 ```
 
 ### 🪟 Windows (MSVC + vcpkg)
@@ -87,6 +104,24 @@ cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . --parallel 18
 ```
 
+or 
+
+1. Install and configure via Windows PowerShell (x86) with Admin permission:
+
+```powershell
+Set-ExecutionPolicy RemoteSigned
+.\setup\win\gstreamer.ps1
+Set-ExecutionPolicy Default
+```
+
+2. Reboot Windows and run PowerShell again
+
+```powershell
+mkdir build && cd build
+cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
+cmake --build . --parallel 18
+```
+
 ---
 
 ## Usage
@@ -94,10 +129,10 @@ cmake --build . --parallel 18
 ### 🔧 Run the RTSP server
 
 ```bash
-./crtsp --config=crtsp.json --framesize=640x480 --bitrate=1500
+./rtsp --config=conf.json --framesize=640x480 --bitrate=1500
 ```
 
-Example `crtsp.json`:
+Example `conf.json`:
 
 ```json
 {

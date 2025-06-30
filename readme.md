@@ -8,12 +8,19 @@
 
 * 📡 RTSP streaming with GStreamer pipelines
 * 🌐 HTTP server for live configuration and diagnostics
-* 📦 JSON config loading/saving
+* 📦 JSON and CLI config loading/saving
 * 🔄 WebRTC session support (via `webrtc_session`)
 * 🧩 Modular C++ headers with meta reflection system
-* 🧠 Built-in `/help` and `/config` UIs (HTML forms)
+* 🧠 Built-in `http://<ip>:<port>` (WebRTC), `http://<ip>:<port>/config` UIs config (HTML forms), http://<ip>:<port>/api (HTTP API)
 
 ---
+
+## Clone Instructions
+
+```bash
+git clone https://github.com/nikolja/crtsp.git
+cd crtsp
+```
 
 ## Build Instructions
 
@@ -28,18 +35,18 @@
 Install required libraries:
 
 ```bash
-sudo apt update
-sudo apt install -y g++ cmake libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev \
-    libfmt-dev
+sudo apt update && sudo apt upgrade
+sudo apt install -y git build-essential cmake ninja-build g++
+sudo apt install -y v4l-utils libv4l-dev libx264-dev libjpeg-dev libglib2.0-dev libcamera-dev
+sudo apt install -y gstreamer1.0-plugins-ugly gstreamer1.0-nice gstreamer1.0-libcamera libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev libgstrtspserver-1.0-dev
 ```
 
 Build:
 
 ```bash
 mkdir build && cd build
-cmake ..
-make -j$(nproc)
+cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
 ```
 
 ### 🪟 Windows (MSVC + vcpkg)
@@ -48,15 +55,37 @@ make -j$(nproc)
 2. Install dependencies:
 
 ```powershell
-vcpkg install gstreamer fmt nlohmann-json
+vcpkg install gstreamer
 ```
 
 3. Configure CMake:
 
 ```powershell
 mkdir build && cd build
-cmake .. -DCMAKE_TOOLCHAIN_FILE="<path-to-vcpkg>/scripts/buildsystems/vcpkg.cmake"
-cmake --build .
+cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="<path-to-vcpkg>/scripts/buildsystems/vcpkg.cmake"
+cmake --build . --parallel 18
+```
+
+### 🪟 Windows (MSVC)
+
+1. Install [GStreamer 1.0] (https://gstreamer.freedesktop.org/documentation/installing/on-windows.html?gi-language=c)
+2. Configure your development environment (edit the system environment variables -> control panel -> system -> advanced -> environment variables)
+## Path: 
+  * C:\gstreamer\1.0\msvc_x86_64\bin
+  * C:\gstreamer\1.0\msvc_x86_64\lib\gstreamer-1.0
+  * C:\gstreamer\1.0\msvc_x86_64\lib
+## System variables
+  * GSTREAMER_1_0_ROOT_MSVC_X86_64: C:\gstreamer\1.0\msvc_x86_64
+  * GSTREAMER_1_0_ROOT_X86_64: C:\gstreamer\1.0\msvc_x86_64
+  * GSTREAMER_DIR: C:\gstreamer\1.0\msvc_x86_64
+## Path:
+  * C:\gstreamer\1.0\msvc_x86_64\bin
+3. Configure CMake:
+
+```powershell
+mkdir build && cd build
+cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
+cmake --build . --parallel 18
 ```
 
 ---

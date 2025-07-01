@@ -175,9 +175,12 @@ Below is the full list of supported keys and their meanings, extracted from `app
 | `framesize`  | string | resolution (e.g., `480p`, `640x480`, `WxH`, `W;H`)                       |
 | `framerate`  | int    | video framerate (e.g., 30)                                               |
 | `format`     | string | pixel format (e.g., `UYVY`, `NV12`, `I420`, `GRAY8`, ...)                |
+| `vidconvert` | bool   | video convert using                                                      |
+| `queueleaky` | bool   | queue leaky using, to avoid frame accumulation                           |
 | `decode`     | string | decoder if needed (e.g., `jpegdec`, `avdec_mjpeg`, ...)                  |
 | `encoder`    | string | output codec (`h264`, `vp8`, `mjpeg`, ...)                               |
 | `backend`    | string | encoder backend (`gst-basic`, `gst-qsv`, `gst-nv`, ...)                  |
+| `encprop`    | string | codec properties (e.g., 'threads=4')                                     |
 | `bitrate`    | int    | encoder bitrate in kbit/s                                                |
 | `tuning`     | string | encoder tuning (`stillimage`, `zerolatency`, ...)                        |
 | `preset`     | string | encoder preset (`ultrafast`, `veryfast`, ...)                            |

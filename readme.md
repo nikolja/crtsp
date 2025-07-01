@@ -354,4 +354,4 @@ These scripts simplify the process of configuring the environment for both devel
 
 ## License
 
-MIT (or specify if proprietary/internal)
+MIT license with an exception for embedded forms

@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iostream>
 #include <functional>
+#include <string_view>
 
 // cxxopts
 #include <cxxopts.hpp>
@@ -91,10 +92,13 @@ struct rtsp_t {
         std::string framesize{ gst::def_camera_size };
         int framerate{ 30 };
         std::string format{ };
+        bool vidconvert{ true };
+        bool queueleaky{ false };
         std::string decode{ };
         std::string encoder{ gst::def_codec_key };
         std::string backend{ gst::def_backend_key };
-        int bitrate{ 1000 }; 
+        std::string encprop{ };
+        int bitrate{ 1000 };
         std::string tuning{ gst::par_x264enc_tune };
         std::string preset{ gst::par_x264enc_speed_preset };
         int keyframes{ 10 };
@@ -198,9 +202,12 @@ struct rtsp_t {
             "video resolution (supported: '240p','360p','480p','720p','960p','1080p' or 'W*H','WxH','W;H')",
             "video framerate (in frames per second)",
             "video format (f.e. 'UYVY','YUY2','YVYU','NV12','NV21','YV12','I420','BGRA','RGBA','GRAY8', ...)",
+            "video convert using, avoid it if the camera already gives 'I420', 'NV12', ... format",
+            "queue leaky using, to avoid frame accumulation if the encoder can't keep up",
             "video decoder if needed (f.e. 'jpegdec', 'avdec_mjpeg', 'qsvjpegdec', 'v4l2jpegdec', ...)",
             "codec for output stream (supported: 'h264','h265','vp8','vp9','mjpeg')",
             "backend for encoder (supported: 'gst-auto','gst-basic','gst-v4l2','gst-libav','gst-nv','gst-qsv','gst-open','gst-d3d11','gst-mf','gst-omx')",
+            "codec properties (f.e. 'threads=4')",
             "encoder bitrate (in kbit/sec) (f.e. '1000')",
             "encoder tuning options (supported: 'stillimage','fastdecode','zerolatency')",
             "encoder preset name for speed/quality options (supported: 'ultrafast','superfast','veryfast','faster', ...)",
@@ -229,12 +236,26 @@ struct rtsp_t {
         gst::initializer::get();
         // setup caps
         std::ostringstream sstream;
+        auto insert_param = [](std::string_view src, std::string_view param) -> std::string {
+            if (param.empty())
+                return std::string(src);
+            auto pos = src.find('!');
+            if (pos != std::string_view::npos) {
+                // insert before '!' with space
+                return std::string(src.substr(0, pos)) + " " + std::string(param) + " " + std::string(src.substr(pos));
+            } else {
+                // just adding to end
+                return std::string(src) + " " + std::string(param);
+            }
+        };
         bool const has_src_props{ !config.property.empty() };
         bool const has_cap_type{ !config.mediatype.empty() };
         bool const has_cap_width{ config.get_frame_width() > 0 };
         bool const has_cap_height{ config.get_frame_height() > 0 };
         bool const has_cap_frmrate{ config.framerate > 0 };
         bool const has_cap_format{ !config.format.empty() };
+        bool const vidconvert_needed{ config.vidconvert };
+        bool const queueleaky_needed{ config.queueleaky };
         bool const has_cap_decode{ !config.decode.empty() };
         std::string caps = has_cap_type ? config.mediatype : "";
         caps = has_cap_width ? caps + fmt::format("{}width={}", caps.empty() ? "" : ", ", config.get_frame_width()) : caps;
@@ -244,6 +265,8 @@ struct rtsp_t {
         bool const has_src_caps{ !caps.empty() };
         // setup encode
         config.setup(encode);
+        // props adding
+        std::string const encode_subpipe{ insert_param(encode.subpipe, config.encprop) };
         // setup rtppay
         //std::string rtppay = fmt::format("{} pt={} name={}", encode_params.rtppay, payload, "pay0");
         // making pipeline
@@ -251,8 +274,9 @@ struct rtsp_t {
             << config.source << (has_src_props ? " " + config.property : "") << " ! " // v4l2src ... ! (source)
             << (has_src_caps ? caps + " ! " : "")                                     // video/x-raw, ... ! (caps)
             << (has_cap_decode ? config.decode + " ! " : "" )                         // jpegdec ! (decode)
-            << encode.convert << " ! "                                                // videoconvert ! (convert)
-            << encode.subpipe << " ! "                                                // x264enc ... (encode)
+            << (vidconvert_needed ? fmt::format("{} ! ", encode.convert) : "")        // videoconvert ! (convert)
+            << (queueleaky_needed ? "queue leaky=2 max-size-buffers=1 ! " : "")       // queue leaky=2 max-size-buffers=1 ! (queue)
+            << encode_subpipe << " ! "                                                // x264enc ... (encode)
             << encode.rtppay << " pt=" << config.payload << " name=pay0";             // rtph264pay config-interval=1 ... (payload)
         return sstream.str();
     }
@@ -636,25 +660,28 @@ template<> inline auto register_members<app::rtsp_t::config_t>() {
         make_member("framesize", 3, &app::rtsp_t::config_t::framesize),
         make_member("framerate", 4, &app::rtsp_t::config_t::framerate),
         make_member("format", 5, &app::rtsp_t::config_t::format),
-        make_member("decode", 6, &app::rtsp_t::config_t::decode),
-        make_member("encoder", 7, &app::rtsp_t::config_t::encoder),
-        make_member("backend", 8, &app::rtsp_t::config_t::backend),
-        make_member("bitrate", 9, &app::rtsp_t::config_t::bitrate),
-        make_member("tuning", 10, &app::rtsp_t::config_t::tuning),
-        make_member("preset", 11, &app::rtsp_t::config_t::preset),
-        make_member("keyframes", 12, &app::rtsp_t::config_t::keyframes),
-        make_member("payload", 13, &app::rtsp_t::config_t::payload),
-        make_member("interval", 14, &app::rtsp_t::config_t::interval),
-        make_member("rtspsink", 15, &app::rtsp_t::config_t::rtspsink),
-        make_member("rtspmcast", 16, &app::rtsp_t::config_t::rtspmcast),
-        make_member("rtspmport", 17, &app::rtsp_t::config_t::rtspmport),
-        make_member("verbose", 18, &app::rtsp_t::config_t::verbose)
+        make_member("vidconvert", 6, &app::rtsp_t::config_t::vidconvert),
+        make_member("queueleaky", 7, &app::rtsp_t::config_t::queueleaky),
+        make_member("decode", 8, &app::rtsp_t::config_t::decode),
+        make_member("encoder", 9, &app::rtsp_t::config_t::encoder),
+        make_member("backend", 10, &app::rtsp_t::config_t::backend),
+        make_member("encprop", 11, &app::rtsp_t::config_t::encprop),
+        make_member("bitrate", 12, &app::rtsp_t::config_t::bitrate),
+        make_member("tuning", 13, &app::rtsp_t::config_t::tuning),
+        make_member("preset", 14, &app::rtsp_t::config_t::preset),
+        make_member("keyframes", 15, &app::rtsp_t::config_t::keyframes),
+        make_member("payload", 16, &app::rtsp_t::config_t::payload),
+        make_member("interval", 17, &app::rtsp_t::config_t::interval),
+        make_member("rtspsink", 18, &app::rtsp_t::config_t::rtspsink),
+        make_member("rtspmcast", 19, &app::rtsp_t::config_t::rtspmcast),
+        make_member("rtspmport", 20, &app::rtsp_t::config_t::rtspmport),
+        make_member("verbose", 21, &app::rtsp_t::config_t::verbose)
         #if (defined(WITH_HTTPLIB))
         ,
-        make_member("webrtctout", 19, &app::rtsp_t::config_t::webrtctout),
-        make_member("webrtcport", 20, &app::rtsp_t::config_t::webrtcport),
-        make_member("webrtcstun", 21, &app::rtsp_t::config_t::webrtcstun),
-        make_member("webrtccont", 22, &app::rtsp_t::config_t::webrtccont)
+        make_member("webrtctout", 22, &app::rtsp_t::config_t::webrtctout),
+        make_member("webrtcport", 23, &app::rtsp_t::config_t::webrtcport),
+        make_member("webrtcstun", 24, &app::rtsp_t::config_t::webrtcstun),
+        make_member("webrtccont", 25, &app::rtsp_t::config_t::webrtccont)
         #endif
     );
 }

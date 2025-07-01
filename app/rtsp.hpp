@@ -691,12 +691,12 @@ void do_parse(T& obj, cxxopts::ParseResult& parsed, bool default_value = true) {
                 auto const& id{ member.get_id() };
                 auto const& name{ member.get_name() };
                 auto parse_option = meta::overload {
-                    [&id, &name, &parsed](int& val) { val = parsed[name].as<int>(); return true; },
-                    [&id, &name, &parsed](bool& val) { val = parsed[name].as<bool>(); return true; },
-                    [&id, &name, &parsed](float& val) { val = parsed[name].as<float>(); return true; },
-                    [&id, &name, &parsed](double& val) { val = parsed[name].as<double>(); return true; },
-                    [&id, &name, &parsed](std::string& val) { val = parsed[name].as<std::string>(); return true; },
-                    [&id, &name, &parsed](unsigned& val) { val = parsed[name].as<unsigned>(); return true; },
+                    [&id, &name, &parsed](int& val) { val = parsed[name].template as<int>(); return true; },
+                    [&id, &name, &parsed](bool& val) { val = parsed[name].template as<bool>(); return true; },
+                    [&id, &name, &parsed](float& val) { val = parsed[name].template as<float>(); return true; },
+                    [&id, &name, &parsed](double& val) { val = parsed[name].template as<double>(); return true; },
+                    [&id, &name, &parsed](std::string& val) { val = parsed[name].template as<std::string>(); return true; },
+                    [&id, &name, &parsed](unsigned& val) { val = parsed[name].template as<unsigned>(); return true; },
                     [&id, &name, &parsed](auto&) { return false; },
                 };
                 // check if the option is present in the parsed result

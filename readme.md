@@ -46,7 +46,7 @@ Build:
 ```bash
 mkdir build && cd build
 cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
-cmake --build . -j$(nproc)
+cmake --build . --config Release --parallel $(nproc)
 ```
 
 Install and build:
@@ -128,6 +128,7 @@ cmake --build . --parallel 18
 
 ### 🔧 Run the RTSP server
 
+Windows:
 ```bash
 ./rtsp --config=conf.json --framesize=640x480 --bitrate=1500
 ```
@@ -143,6 +144,16 @@ Example `conf.json`:
 ```
 
 Command-line args override JSON.
+
+RPi5 libcamera:
+```bash
+./rtsp --source=libcamerasrc --framesize=720p --framerate=30 --format=NV12 --property=
+```
+
+RPi5 v4l2src:
+```bash
+/rtsp --property=device=/dev/video99 --framesize=480x320 --framerate=25
+```
 
 ## Parameters
 

@@ -66,10 +66,10 @@ void print_conf(std::string const& path) {
 void print_info(int argc, const char* const argv[]) {
     std::string arguments;
     LOG_INFO_FMT( "build date: {} {} {}", __DATE__, __TIME__, app::c_build_marker);
-    LOG_INFO_FMT( "./{} --help to print help message", argv[0] );
+    LOG_INFO_FMT( "{} --help to print help message", argv[0] );
     for (int i = 0; i < argc; ++i)
         arguments += std::string(argv[i]) + std::string(" ");
-    LOG_INFO_FMT( "./{}", arguments );
+    LOG_INFO_FMT( "{}", arguments );
 }
 
 void print_pars(std::string const& info, opts::parser const& pars, bool just_result = true) {

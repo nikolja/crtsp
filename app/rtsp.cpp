@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     if (parsed.count("help")) {
         LOG_INFO_FMT( options.help() );
         LOG_INFO_FMT( "usage:" );
-        LOG_INFO_FMT( "./{} [--source=v4l2src] [--property=device=/dev/video0] [--frametype=video/x-raw] [--framesize=640x512] [--framerate=30] [--bitrate=1000]", argv[0] );
+        LOG_INFO_FMT( "{} [--source=v4l2src] [--property=device=/dev/video0] [--frametype=video/x-raw] [--framesize=640x512] [--framerate=30] [--bitrate=1000]", argv[0] );
         return 0;
     }
     // loading config

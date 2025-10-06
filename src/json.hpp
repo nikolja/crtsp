@@ -7,6 +7,7 @@
 #include <string>
 #include <stack>
 #include <vector>
+#include <cstddef>
 #include <unordered_map>
 
 #include <nlohmann/json.hpp>
@@ -53,7 +54,7 @@ inline std::string safe_string(nlohmann::json const& j, std::string const& key) 
         return "-";
     try {
         if (j.at(key).is_string()) return j.at(key).get<std::string>();
-        return j.at(key).dump(); // надає string-подібне представлення будь-якого типу
+        return j.at(key).dump();
     } catch (...) {
         return "-";
     }
@@ -70,9 +71,9 @@ nlohmann::json serialize(T const& obj) {
             //j[member.get_name()] = member.to_json(obj);
             auto& v = j[member.get_name()];
             if (member.can_get_const_ref()) {
-                v = member.get(obj);
+                v = serialize(member.get(obj));
             } else if (member.has_getter()) {
-                v = member.get_copy(obj); // passing copy as const ref
+                v = serialize(member.get_copy(obj)); // passing copy as const ref
             }
         }
     );
@@ -134,13 +135,15 @@ void deserialize(T& obj, nlohmann::json const& j) {
             [&obj, &j](auto& member) {
                 //member.from_json( obj, j[member.get_name()] );
                 if (j.contains(member.get_name())) {
-                    auto& v = j[member.get_name()];
+                    auto const& v = j[member.get_name()];
                     if (!v.is_null()) {
                         using MemberT = get_member_type<decltype(member)>;
                         if (member.has_setter()) {
-                            member.set(obj, v.template get<MemberT>());
+                            //member.set(obj, v.template get<MemberT>());
+                            MemberT tmp{}; deserialize(tmp, v); member.set(obj, std::move(tmp));
                         } else if (member.can_get_ref()) {
-                            member.get_ref(obj) = v.template get<MemberT>();
+                            //member.get_ref(obj) = v.template get<MemberT>();
+                            auto& ref = member.get_ref(obj); deserialize(ref, v);
                         }// else throw std::runtime_error("error: can't deserialize member because it's read only");
                     }
                 }

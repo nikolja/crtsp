@@ -2,8 +2,8 @@
 #include "rtsp.hpp"
 
 int main(int argc, char* argv[]) {
-	// capture ctrl-c
-	signal(SIGINT, app::rtsp_t::handler_sigint);
+    // capture ctrl-c
+    signal(SIGINT, app::rtsp_t::handler_sigint);
     // logging
     app::logging();
     // rtsp server
